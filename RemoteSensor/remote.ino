@@ -101,6 +101,10 @@ float dewPoint(float temperature, float humidity) {
   return Td;
 }
 
+float fahrenheit(double celsius){
+  return 1.8 * celsius + 32; 
+}
+
 /*
  * record
  * Records the value into a measure structure
@@ -191,8 +195,9 @@ void readAll() {
   bmp180.getEvent(&event);
   Serial.println();
   if(event.pressure){
-    Serial.print("BP Reading: "); Serial.println(event.pressure);    
-    record(bmp180_pressures, event.pressure); 
+    Serial.print("BP Reading: "); Serial.println(event.pressure);
+    // To convert to inHg mulitply by 0.02953337    
+    record(bmp180_pressures, event.pressure * 0.02953337); 
   
 
     float temperature;
@@ -224,15 +229,19 @@ void readAll() {
 void sendAll() {
   txMeasureStruct measurements;
   measurements.header='*';
-  measurements.temperature_dht = calculateAverage(dht22_temperatures);
-  measurements.temperature_bmp = calculateAverage(bmp180_temperatures);
+  measurements.temperature_dht = fahrenheit(calculateAverage(dht22_temperatures));
+  measurements.temperature_bmp = fahrenheit(calculateAverage(bmp180_temperatures));
   measurements.humidity = calculateAverage(dht22_humidities);
   measurements.pressure = calculateAverage(bmp180_pressures);
   measurements.voltage = calculateAverage(promini_voltages);
   measurements.lightlevel = calculateAverage(light_levels);
-  measurements.dewpoint = dewPoint(measurements.temperature_dht, measurements.humidity);
+  measurements.dewpoint = fahrenheit(dewPoint(measurements.temperature_dht, measurements.humidity));
   measurements.done = !digitalRead(DONE_PIN);
   measurements.charge = !digitalRead(CHARGE_PIN);
+  if(measurements.done == true && measurements.charge == true){
+    measurements.done = false;
+    measurements.charge = false;
+  }
   Serial.println("Calculated Averages: ");
   Serial.print("avg dht: "); Serial.println(measurements.temperature_dht);
   Serial.print("avg bmp: "); Serial.println(measurements.temperature_bmp);
