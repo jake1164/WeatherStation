@@ -86,19 +86,28 @@ void blink(int times) {
 /*
  * dewPoint
  * Calculates the dew point
- * delta max - 0.6544 wrt dewPoint()
- * reference http://en.wikipedia.org/wiki/dewpoint
+ * dewPoint function from NOAA
+ * reference (1) : http://wahiduddin.net/calc/density_algorithms.htm
+ * reference (2) : http://www.colorado.edu/geography/weather_station/Geog_site/about.htm
  *
  * @param temperature float temperature in celsius
  * @param humidity float humidity in %
  * @return float
  */
-float dewPoint(float temperature, float humidity) {
-  float a = 12.271;
-  float b = 237.7; 
-  float temp = (a * temperature) / (b + temperature) + log(humidity / 100);
-  float Td = (b * temp) / (a - temp);
-  return Td;
+float dewPoint(float celsius, float humidity) {
+  float ratio = 373.15 / (273 + celsius);
+  float rhs = -7.90298 * (ratio -1);
+  rhs += 5.02808 * log10(ratio);
+  rhs += -1.3816e-7 * (pow(10, (11.344 * (1 - 1/ratio))) - 1);
+  rhs += 8.1328e-3 * (pow(10, (-3.49149 * (ratio - 1))) - 1);
+  rhs += log10(1013.246);
+
+  // factor -3 to adjust units - Vapor Pressure SVP * humidity
+  float vp = pow(10, rhs - 3) * humidity;
+
+  // DEWPOINT = F(Vapor Pressure)
+  float t = log(vp / 0.61078);
+  return (241.88 * t) / (17.558 - t);
 }
 
 float fahrenheit(double celsius){
